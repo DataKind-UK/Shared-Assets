@@ -1,0 +1,119 @@
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<title>Postcode Explorer</title>
+
+<!-- Bootstrap Core CSS -->
+<link rel="stylesheet" href="/static/css/bootstrap.min.css" type="text/css">
+
+<!-- Custom Fonts -->
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" href="/static/font-awesome/css/font-awesome.min.css" type="text/css">
+
+<!-- Plugin CSS -->
+<link rel="stylesheet" href="/static/css/magnific-popup.css" type="text/css">
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="/static/css/creative.css" type="text/css">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+	  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+	  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>    
+	  <script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+	  <script src="https://code.jquery.com/jquery-3.0.0.js"></script>               
+	  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>        
+	
+	  <style>
+	    #map{ height: 100% }
+	  </style>                               
+    </head>
+    <body>    
+ 
+			<p>Pop a postcode into the search box below and see what happens!</p>        
+			<form class="form-inline" method="post" action="{{ url_for('postcode') }}">
+			  <div class="form-group">
+
+			    <input type="text" class="form-control" id="postcode_id1" name="postcode_id1" placeholder="AB12">
+
+
+			    <input type="text" class="form-control" id="postcode_id2" name="postcode_id2" placeholder="3CD">
+			  </div>
+			  <button type="submit" class="btn btn-primary">Explore</button>
+			</form>
+
+	
+        <div id="container">
+            <div class="title">
+                <h1>Postcode Results</h1>
+            </div>
+            <div id="content">
+                Selected Postcode: <strong>{{postcode_id1}} {{postcode_id2}}</strong>
+            </div>
+        </div>
+        <div id="map"></div>
+<script>
+
+map = new L.Map('map');
+
+// create the tile layer with correct attribution
+var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+var osmAttrib='Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors';
+var osm = new L.TileLayer(osmUrl, {minZoom: 8, maxZoom: 18, attribution: osmAttrib});		
+
+// start the map in South-East England
+map.setView(new L.LatLng(51.367, -2.64),8);
+map.addLayer(osm);                
+  var postcodeAPI = "http://localhost:5000/api/postcode/inspire/{{postcode_id1}}/{{postcode_id2}}";
+  console.log(postcodeAPI);     
+                              
+	$.getJSON(postcodeAPI, function (json) {      
+		
+		for (var parcel in json)
+		{
+		   if (json.hasOwnProperty(parcel))
+		   {
+		      // here you have access to      
+			  //console.log(json); 
+			  var arrayLength = json.data.length;  
+			  //console.log(arrayLength);
+			  for (var i = 0; i < arrayLength; i++) {     
+				
+
+				// This is the crucial loop that picks up each inspire_poly within a postcode
+				var poly = json.data[i].inspire_poly;   
+				//console.log(poly);
+				var clean_poly = jQuery.parseJSON(poly);  
+				if(i==0)
+				{                                   
+                    // Try and find a better map frame of reference: 
+					map.setView(new L.LatLng(clean_poly.coordinates[0][0][1], clean_poly.coordinates[0][0][0]),11);   
+				}
+				var clean_poly_map = L.geoJson(clean_poly).addTo(map);
+				clean_poly_map.bindPopup('<b>Inspire ID: </b> <a href="http://localhost:5000/inspire_parcel/'+json.data[i].inspire_id+'">'+ json.data[i].inspire_id + '</a></br><b>Acres</b>: '+ json.data[i].Acres); 
+			
+				if ( parseInt(json.data[i].Acres) > 25) {
+					clean_poly_map.setStyle({fillColor: '#FF0000'});
+				}
+			  }
+			}
+		}
+	});
+
+
+
+</script>
+    </body>
+</html>

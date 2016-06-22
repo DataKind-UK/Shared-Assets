@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <title>Handle POST requests with Flask</title>                                          
+    </head>
+    <body>
+        <div id="container">
+            <div class="title">
+                <h1>POST request with Flask</h1>
+            </div>
+            <div id="content">
+                <form method="post" action="{{ url_for('parcel') }}">
+                  <label for="parcel_id">Enter Parcel ID:</label>
+                  <input type="text" name="parcel_id" /><br />
+                  <input type="submit" />
+                </form>
+            </div>
+            <div class="title">
+                <h1>Flask code</h1>
+            </div>
+                <code><pre>
+@app.route('/')
+def form():
+    return render_template('form_submit.html')
+                </pre></code>
+            </div>
+        </div>
+    </body>
+</html>

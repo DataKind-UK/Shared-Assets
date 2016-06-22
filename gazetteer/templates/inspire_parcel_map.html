@@ -1,0 +1,111 @@
+<html>
+    <head>
+	  <title>A Leaflet map!</title>
+	  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+	  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>    
+	  <script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+	  <script src="https://code.jquery.com/jquery-3.0.0.js"></script>               
+	  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>        
+	
+	  <style>
+	    #map{ height: 100% }
+	  </style>                               
+    </head>
+    <body>    
+	
+		<div id="container">
+	        <div class="title">
+	            <h1>Land Parcel Selection</h1>
+	        </div>
+	
+        <div id="container">
+
+            <div id="content">
+                Selected Inspire Parcel: <strong>{{inspire_id}}</strong>
+            </div>
+        </div>
+         		<div id="map"></div>
+
+		  <script>
+
+		  	map = new L.Map('map');
+
+			// create the tile layer with correct attribution
+			var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+			var osmAttrib='Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors';
+			var osm = new L.TileLayer(osmUrl, {minZoom: 8, maxZoom: 18, attribution: osmAttrib});		
+
+			// start the map in South-East England
+			map.setView(new L.LatLng(51.367, -2.64),8);
+			map.addLayer(osm);                
+			
+
+
+
+			    var geocodingAPI = "http://localhost:5000/api/parcel/inspire_poly/"+{{inspire_id}};    
+			    console.log(geocodingAPI);
+			
+				$.getJSON(geocodingAPI, function (json) {
+
+				    // Set the variables from the results array  
+				    console.log(geocodingAPI);
+				    var address = json.data[0].inspire_poly;
+				    console.log('Address : ', address);   
+				    clean_address = jQuery.parseJSON(address);                
+					//addDataToMap(clean_address, map);  
+					var parcel = L.geoJson(clean_address).addTo(map);   
+					map.setView(new L.LatLng(clean_address.coordinates[0][0][1], clean_address.coordinates[0][0][0]),14);   
+
+					var extraData = "http://localhost:5000/api/parcel/inspire/"+{{inspire_id}};  
+					
+					$.getJSON(extraData, function (json) {
+
+					    // Set the variables from the results array  
+					 	//console.log(extraData);
+					    var acres = json.data[0].Acres; 
+						var inspire_id = json.data[0].inspire_id; 
+						console.log(inspire_id);       
+						 
+						var alcData = "http://localhost:5000/api/parcel/alc/"+{{inspire_id}};
+						
+						$.getJSON(alcData, function(json){
+							var slug = 'Inspire ID: ' + inspire_id + '<br>';							
+							for (var alc in json)
+							{
+								if (json.hasOwnProperty(alc))
+								{
+
+									var arrayLength = json.data.length;
+								
+									for (var i = 0; i < arrayLength; i++){
+										var alc_grade = json.data[i].alc_grade;   
+										var overlap_pc = json.data[i].overlap_pc;    
+									 
+										slug += "Land: " + alc_grade + " ("+overlap_pc+"%)<br>";
+
+									}
+								}
+							}
+							var topsoilData = "http://localhost:5000/api/parcel/topsoil/"+{{inspire_id}};
+							$.getJSON(topsoilData, function(json){
+						
+									var numOfAreas = json.data.length;
+									for (var i = 0; i < numOfAreas; i++) {
+										var topsoil_lcmclass = json.data[i].lcm_class;
+										var overlap_pc = json.data[i].overlap_pc;
+										slug += "Category: " + topsoil_lcmclass + " (" + overlap_pc +"%)<br>";
+
+										console.log(topsoil_lcmclass)
+									}
+			
+								parcel.bindPopup(slug);
+							});
+						});
+					});          
+				});
+		  </script>
+
+    </body>
+</html>
